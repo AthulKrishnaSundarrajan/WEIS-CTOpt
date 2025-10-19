@@ -119,8 +119,8 @@ class DLCInstance(object):
         self.wave_heading = 0.0
         self.wave_gamma = 0.0
         self.probability = 0.0
-        self.analysis_time = 600.
-        self.transient_time = 120.
+        self.analysis_time = 350.
+        self.transient_time = 0.
         self.shutdown_time = 9999.
         self.IEC_WindType = 'NTM'
         self.turbine_status = 'operating'

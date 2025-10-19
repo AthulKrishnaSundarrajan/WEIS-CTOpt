@@ -35,7 +35,7 @@ Level3: # Options for WEIS fidelity level 3 = nonlinear time domain
     openfast_file: MHK_RM1_Floating.fst
     openfast_dir: ../00_setup/OpenFAST_models/MHK_RM1
     simulation:
-        DT: 0.005
+        DT: 0.01
         CompElast: 1
         CompInflow: 1
         CompAero: 2
@@ -90,7 +90,7 @@ Level3: # Options for WEIS fidelity level 3 = nonlinear time domain
         WaveMod: 5
     #     WaveHs: 2.0
     #     WaveTp: 6.75
-    #     WaveTMax: 600
+        WaveTMax: 3600
     #     WvLowCOff: 0.314159
     #     WvHiCOff: 1.570796
     #     WvSumQTF: False
@@ -158,8 +158,8 @@ DLC_driver:
         - DLC: "1.1"
           current_speed: [1.75,2.,2.25,2.5,2.75,3.0]
           n_seeds: 1
-          analysis_time: 600
-          transient_time: 200
+          analysis_time: 350
+          transient_time: 00
           turbsim_inputs:
             PLExp: 0
             TurbModel: TIDAL

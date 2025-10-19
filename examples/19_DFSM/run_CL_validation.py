@@ -23,12 +23,15 @@ from weis.glue_code.mpi_tools import MPI
 
 from pCrunch import Crunch, FatigueParams, AeroelasticOutput
 
+plt.rcParams['font.family'] = 'DeJavu Serif'
+plt.rcParams['font.serif'] = ['Times New Roman']
+
 # plot properties
 markersize = 10
 linewidth = 1.5
 fontsize_legend = 16
 fontsize_axlabel = 18
-fontsize_tick = 12
+fontsize_tick = 15
 
 # parameters
 bins = 10
@@ -248,7 +251,7 @@ def run_closed_loop_simulation(dfsm,FAST_sim,dt,ode_algorithm,test_datapath,tran
         sim_results = run_serial(case_data_all)
 
 
-    PSD_quantities = ['GenSpeed','TwrBsMyt','PtfmPitch','BldPitch1','GenTq','Wave1Elev']
+    PSD_quantities = ['GenPwr','GenSpeed','TwrBsMyt','PtfmPitch','BldPitch1','GenTq','Wave1Elev']
 
     #-----------------------------------------------
     # Plot results
@@ -261,6 +264,13 @@ def run_closed_loop_simulation(dfsm,FAST_sim,dt,ode_algorithm,test_datapath,tran
 
     ae_output_dfsm_list = []
     ae_output_of_list = []
+
+    color_of = 'k'
+    color_dfsm = 'r'
+
+    currspeed_array = []
+    waveelev_array = []
+    TwrBsMyt_array = []
 
     for icase,sim_result in enumerate(sim_results):
 
@@ -298,19 +308,41 @@ def run_closed_loop_simulation(dfsm,FAST_sim,dt,ode_algorithm,test_datapath,tran
         #------------------------------------------------------
         # Plot Controls and Inputs
         #------------------------------------------------------
+        tspan = [0,600]
 
         for iu,control in enumerate(reqd_controls):
+
+            if control == 'BldPitch1':
+                plt_title = 'Blade Pitch'
+                unit = ' [deg]'
+
+            elif control == 'GenTq':
+                plt_title = 'Generator Torque'
+                unit = ' [kNm]'
+
+            elif control == 'RtVAvgxh':
+                plt_title = 'Current Speed'
+                unit = ' [m/s]'
+                dict = {'RtVAvgxh':controls_of[:,iu]}
+                currspeed_array.append(dict)
+
+            elif control == 'Wave1Elev':
+                plt_title = 'Wave Elevation'
+                unit = ' [m]'
+                dict = {'Wave1Elev':controls_of[:,iu]}
+                waveelev_array.append(dict)
 
             if control in PSD_quantities:
                 xf,FFT_of,_ = spectral.fft_wrap(time_of,controls_of[:,iu],averaging = 'Welch',averaging_window= 'hamming')
                 xf,FFT_dfsm,_ = spectral.fft_wrap(time_dfsm,controls_dfsm[:,iu],averaging = 'Welch',averaging_window= 'hamming')
 
                 fig1,ax1 = plt.subplots(1)
-                ax1.loglog(xf,np.sqrt(FFT_of),label = 'OpenFAST')
-                ax1.loglog(xf,np.sqrt(FFT_dfsm),label = 'DFSM')
+                ax1.loglog(xf,np.sqrt(FFT_of),color = color_of,label = 'OpenFAST')
+                ax1.loglog(xf,np.sqrt(FFT_dfsm),color = color_dfsm,label = 'DFSM')
                 ax1.set_xlabel('Freq [Hz]',fontsize = fontsize_axlabel)
-                ax1.set_title(control + '_PSD',fontsize = fontsize_axlabel)
+                ax1.set_title(plt_title + ' PSD',fontsize = fontsize_axlabel)
                 ax1.legend(ncol = 2,fontsize = fontsize_legend)
+                ax1.tick_params(labelsize=fontsize_tick)
                 #ax1.set_xlim([np.min(xf),np.max(xf)])
 
                 if save_flag:       
@@ -319,10 +351,10 @@ def run_closed_loop_simulation(dfsm,FAST_sim,dt,ode_algorithm,test_datapath,tran
 
         
             fig,ax = plt.subplots(1)
-            ax.plot(time_of,controls_of[:,iu],label = 'OpenFAST')
-            ax.plot(time_dfsm,controls_dfsm[:,iu],label = 'DFSM')
+            ax.plot(time_of,controls_of[:,iu],color = color_of,label = 'OpenFAST')
+            ax.plot(time_dfsm,controls_dfsm[:,iu],color = color_dfsm,label = 'DFSM')
             
-            ax.set_title(control,fontsize = fontsize_axlabel)
+            ax.set_title(plt_title+unit,fontsize = fontsize_axlabel)
             ax.set_xlim(tspan)
             ax.tick_params(labelsize=fontsize_tick)
             ax.legend(ncol = 2,fontsize = fontsize_legend)
@@ -334,21 +366,37 @@ def run_closed_loop_simulation(dfsm,FAST_sim,dt,ode_algorithm,test_datapath,tran
             plt.close(fig)
 
             
-
+        tspan = [200,400]
         #------------------------------------------------------
         # Plot States
         #------------------------------------------------------
         for ix,state in enumerate(reqd_states):
+
+            if state == 'GenSpeed':
+                plt_title = 'Generator Speed'
+                unit = ' [rpm]'
+
+            elif state == 'PtfmPitch':
+                plt_title = 'Platform Pitch'
+                unit = ' [deg]'
+
+            elif state == 'PtfmHeave':
+                plt_title = 'Platform Heave'
+                unit = ' [m]'
+            else:
+                plt_title = state
+                unit = ''
 
             if state in PSD_quantities:
                 xf,FFT_of,_ = spectral.fft_wrap(time_of,states_of[:,ix],averaging = 'Welch',averaging_window= 'hamming')
                 xf,FFT_dfsm,_ = spectral.fft_wrap(time_dfsm,states_dfsm[:,ix],averaging = 'Welch',averaging_window= 'hamming')
 
                 fig1,ax1 = plt.subplots(1)
-                ax1.loglog(xf,np.sqrt(FFT_of),label = 'OpenFAST')
-                ax1.loglog(xf,np.sqrt(FFT_dfsm),label = 'DFSM')
+                ax1.loglog(xf,np.sqrt(FFT_of),color = color_of,label = 'OpenFAST')
+                ax1.loglog(xf,np.sqrt(FFT_dfsm),color = color_dfsm,label = 'DFSM')
                 ax1.set_xlabel('Freq [Hz]',fontsize = fontsize_axlabel)
-                ax1.set_title(state + '_PSD',fontsize = fontsize_axlabel)
+                ax1.tick_params(labelsize=fontsize_tick)
+                ax1.set_title(plt_title + ' PSD',fontsize = fontsize_axlabel)
                 ax1.legend(ncol = 2,fontsize = fontsize_legend)
                 #ax1.set_xlim([np.min(xf),np.max(xf)])
 
@@ -358,10 +406,10 @@ def run_closed_loop_simulation(dfsm,FAST_sim,dt,ode_algorithm,test_datapath,tran
 
                 
             fig,ax = plt.subplots(1)
-            ax.plot(time_of,states_of[:,ix],label = 'OpenFAST')
-            ax.plot(time_dfsm,states_dfsm[:,ix],label = 'DFSM')
+            ax.plot(time_of,states_of[:,ix],color = color_of,label = 'OpenFAST')
+            ax.plot(time_dfsm,states_dfsm[:,ix],color = color_dfsm,label = 'DFSM')
             
-            ax.set_title(state,fontsize = fontsize_axlabel)
+            ax.set_title(plt_title+unit,fontsize = fontsize_axlabel)
             ax.set_xlim(tspan)
             ax.tick_params(labelsize=fontsize_tick)
             ax.legend(ncol = 2,fontsize = fontsize_legend)
@@ -378,17 +426,36 @@ def run_closed_loop_simulation(dfsm,FAST_sim,dt,ode_algorithm,test_datapath,tran
         #------------------------------------------
         for iy,output in enumerate(reqd_outputs):
 
+            if output == 'GenPwr':
+                plt_title = 'Generator Power'
+                unit = ' [kW]'
+
+            elif output == 'TwrBsFxt':
+                plt_title = 'Tower-Base FA Force'
+                unit = ' [kN]'
+
+            elif output == 'TwrBsMyt':
+                plt_title = 'Tower-Base FA Moment'
+                unit = ' [kNm]'
+                dict = {'OpenFAST':outputs_of[:,iy],'DFSM':outputs_dfsm[:,iy]}
+                TwrBsMyt_array.append(dict)
+            else:
+                plt_title = output
+                unit = ''
+
+
 
             if output in PSD_quantities:
                 xf,FFT_of,_ = spectral.fft_wrap(time_of,outputs_of[:,iy],averaging = 'Welch',averaging_window= 'hamming')
                 xf,FFT_dfsm,_ = spectral.fft_wrap(time_dfsm,outputs_dfsm[:,iy],averaging = 'Welch',averaging_window= 'hamming')
 
                 fig1,ax1 = plt.subplots(1)
-                ax1.loglog(xf,np.sqrt(FFT_of),label = 'OpenFAST')
-                ax1.loglog(xf,np.sqrt(FFT_dfsm),label = 'DFSM')
+                ax1.loglog(xf,np.sqrt(FFT_of),color = color_of,label = 'OpenFAST')
+                ax1.loglog(xf,np.sqrt(FFT_dfsm),color = color_dfsm,label = 'DFSM')
                 ax1.set_xlabel('Freq [Hz]',fontsize = fontsize_axlabel)
-                ax1.set_title(output + '_PSD',fontsize = fontsize_axlabel)
+                ax1.set_title(plt_title + ' PSD',fontsize = fontsize_axlabel)
                 ax1.legend(ncol = 2,fontsize = fontsize_legend)
+                ax1.tick_params(labelsize=fontsize_tick)
                 #ax1.set_xlim([np.min(xf),np.max(xf)])
 
                 if save_flag:       
@@ -396,11 +463,11 @@ def run_closed_loop_simulation(dfsm,FAST_sim,dt,ode_algorithm,test_datapath,tran
                 plt.close(fig1)
 
             fig,ax = plt.subplots(1)
-            ax.plot(time_of,outputs_of[:,iy],label = 'OpenFAST')
-            ax.plot(time_dfsm,outputs_dfsm[:,iy],label = 'DFSM')
+            ax.plot(time_of,outputs_of[:,iy],color = color_of,label = 'OpenFAST')
+            ax.plot(time_dfsm,outputs_dfsm[:,iy],color = color_dfsm,label = 'DFSM')
             
             
-            ax.set_title(output,fontsize = fontsize_axlabel)
+            ax.set_title(plt_title + unit,fontsize = fontsize_axlabel)
             ax.set_xlim(tspan)
             ax.tick_params(labelsize=fontsize_tick)
             ax.legend(ncol = 2,fontsize = fontsize_legend)
@@ -457,6 +524,11 @@ def run_closed_loop_simulation(dfsm,FAST_sim,dt,ode_algorithm,test_datapath,tran
 
     with open(results_file,'wb') as handle:
         pickle.dump(results_dict,handle)
+
+    # results_dict = {'ws_array':currspeed_array,'wave_array':waveelev_array,'myt_array':TwrBsMyt_array}
+
+    # with open(plot_path +os.sep +'ts_dict.pkl','wb') as handle:
+    #     pickle.dump(results_dict,handle)
                 
 
 if __name__ == '__main__':
@@ -464,7 +536,7 @@ if __name__ == '__main__':
     if MPI:
         from weis.glue_code.mpi_tools import map_comm_heirarchical,subprocessor_loop, subprocessor_stop
     
-    test_inds = np.arange(0,42)
+    test_inds = [5,15,32]#np.arange(0,42)
 
     # path to this directory
     this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -515,7 +587,7 @@ if __name__ == '__main__':
         pkl_name = this_dir + os.sep +'dfsm_mhk.pkl'
 
         format = '.pdf'
-        dt = 0.005;transition_time = 200
+        dt = 0.01;transition_time = 200
 
         # load dfsm model
         with open(pkl_name,'rb') as handle:
@@ -531,7 +603,7 @@ if __name__ == '__main__':
         #---------------------------------------------------
 
         # datapath
-        testpath = this_dir + os.sep + 'outputs/RM1_test2' #<-------------------change this
+        testpath = this_dir + os.sep + 'outputs/RM1_test' #<-------------------change this
 
         # get the path to all .outb files in the directory
         outfiles = [os.path.join(testpath,f) for f in os.listdir(testpath) if valid_extension(f)]
@@ -584,7 +656,7 @@ if __name__ == '__main__':
     save_flag = True
 
     # save path
-    save_path = this_dir + os.sep + 'outputs' + os.sep +'closed_loop_validation'
+    save_path = this_dir + os.sep + 'outputs' + os.sep +'CL_val'
     
 
     if rank == 0 and not os.path.isdir(save_path):

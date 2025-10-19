@@ -1,5 +1,5 @@
 general:
-    folder_output: outputs/RM1_dfsm
+    folder_output: /home/athulsun/multifidelity_paper_studies/06_multiobjective/outputs/RM1_300
     fname_output: iea15mw
 
 design_variables:

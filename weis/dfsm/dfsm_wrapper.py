@@ -242,6 +242,7 @@ def  generate_wind_files_local(fst_vt, modopt, inputs, discrete_inputs, FAST_run
     TMax = np.zeros(dlc_generator.n_cases)
     TStart = np.zeros(dlc_generator.n_cases)
     
+    
 
     # fix hub height if MHK
     if modopt['flags']['marine_hydro']:
@@ -283,6 +284,7 @@ def  generate_wind_files_local(fst_vt, modopt, inputs, discrete_inputs, FAST_run
             # Power law exponent of wind shear
             if dlc_generator.cases[i_case].PLExp < 0:    # use PLExp based on environment options (shear_exp), otherwise use custom DLC PLExp
                 dlc_generator.cases[i_case].PLExp = PLExp
+            
             # Length of wind grids
             dlc_generator.cases[i_case].AnalysisTime = dlc_generator.cases[i_case].analysis_time + dlc_generator.cases[i_case].transient_time
     
@@ -452,6 +454,16 @@ def dfsm_wrapper(fst_vt, modopt, inputs, discrete_inputs, FAST_runDirectory = No
     reqd_controls = model_options['reqd_controls']
     reqd_outputs = model_options['reqd_outputs']
     scale_args = model_options['scale_args']
+
+    for chan in reqd_states+reqd_outputs+reqd_controls:
+        if chan in ['GenTq','GenPwr']:
+            fst_vt['outlist']['ServoDyn'][chan] = True
+        elif chan[:2] == 'Rt':
+            fst_vt['outlist']['AeroDyn'][chan] = True
+        elif chan == 'Wave1Elev':
+            fst_vt['outlist']['SeaState'][chan] = True
+        else:
+            fst_vt['outlist']['ElastoDyn'][chan] = True
     
     # set run dir. THis is the directory where OpenFAST files are stored
     general_options['run_dir'] = modopt['General']['openfast_configuration']['OF_run_dir']
@@ -498,14 +510,14 @@ def dfsm_wrapper(fst_vt, modopt, inputs, discrete_inputs, FAST_runDirectory = No
         rng = np.random.default_rng(12345)
 
         wv_files = []
-
         for i_case,case in enumerate(case_list):
             
             ts_file_     = TurbSimFile(case[('InflowWind','FileName_BTS')])
             rot_avg = compute_rot_avg(ts_file_['u'],ts_file_['y'],ts_file_['z'],ts_file_['t'],rotorD,hub_height)
             u_h         = rot_avg[0,:]
+            
             t          = ts_file_['t']
-            dt = tt[1]-tt[0]
+            dt = t[1]-t[0]
             
             if fst_vt['SeaState']['WaveMod'] == 5:
                 DT = fst_vt['SeaState']['WaveDT']
@@ -539,7 +551,7 @@ def dfsm_wrapper(fst_vt, modopt, inputs, discrete_inputs, FAST_runDirectory = No
         # generate OpenFAST files
         # This step generates the DISCON.IN and cp-ct-cq.txt files which are need to run closed-loop simulations
         
-        for case in case_name:
+        for i_case,case in enumerate(case_name):
             fst_vt['InflowWind']['WindType'] = case_list[i_case][('InflowWind','WindType')]
             fst_vt['InflowWind']['FileName_BTS'] = case_list[i_case][('InflowWind','FileName_BTS')]
             fst_vt['InflowWind']['WindType'] = case_list[i_case][('InflowWind','WindType')]
@@ -606,6 +618,7 @@ def dfsm_wrapper(fst_vt, modopt, inputs, discrete_inputs, FAST_runDirectory = No
             t0 = time[0]; 
             tf = time[-1]
             tspan = [t0,tf]
+            
 
             args = {'DT':dt,
                         'num_blade':2,'pitch':0}
